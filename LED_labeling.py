@@ -10,10 +10,10 @@ from skimage.measure import label, regionprops
 from skimage.morphology import closing, square
 from skimage.color import label2rgb, rgb2gray
 
-detect_th = 0.87
+detect_th = 0.25
 
-image_rgb = io.imread('leds_on.jpg')
-#image_rgb = io.imread('leds_off.jpg')
+image_rgb = io.imread('http://192.168.0.192:8080/shot.jpg')
+#image_rgb = io.imread('examples/leds_off.jpg')
 image = rgb2gray(image_rgb)
 
 # apply threshold
@@ -37,9 +37,10 @@ leds = {} #led objects
 for region in regionprops(label_image):
     # take regions with large enough areas
 
-    if region.area in range(400,600):
+    if region.area > 1000:
         # draw rectangle around segmented item
         minr, minc, maxr, maxc = region.bbox
+
         cropped = image_rgb[minr:maxr, minc:maxc]
         skimage.io.imsave("temp/" + str(region.label)+".jpg", cropped)
         color_thief = ColorThief("temp/" + str(region.label)+".jpg")
