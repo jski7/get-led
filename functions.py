@@ -33,7 +33,6 @@ def detectLeds(file, detect_th, min_size, max_size):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.imshow(image_label_overlay)
 
-
     for region in regionprops(label_image):
         # take regions with large enough areas
         print("Size:" + str(region.area))
