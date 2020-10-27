@@ -10,6 +10,8 @@ from skimage.measure import label, regionprops
 from skimage.morphology import closing, square
 from skimage.color import label2rgb, rgb2gray
 
+def getSnapshot(stream_url):
+    webcam = cv2.VideoCapture(0)
 
 def detectLeds(file, detect_th, min_size, max_size):
 
@@ -90,7 +92,7 @@ def renameLed(name,  obj):
     leds[name] = leds[obj]
     leds.pop(obj)
 
-url = 'http://192.168.0.192:8080/shot.jpg'
+url = 'http://192.168.0.54:8081'
 
 leds = detectLeds(url, 0.27, 1400,2500)
 
