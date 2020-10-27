@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import skimage
 from colorthief import ColorThief
-import time
+from capture import captureSnap
 
 from skimage import io
 from skimage.segmentation import clear_border
@@ -94,14 +94,17 @@ def renameLed(name,  obj):
 
 url = 'http://192.168.0.54:8081'
 
-leds = detectLeds(url, 0.27, 1400,2500)
+snap = captureSnap(url)
+w
 
-while 1==1:
-    leds = readStates(url, leds, 200)
-    print()
-    for led in leds:
-        print(str(led) + " " + leds[led]["led_state"])
-        #print(leds[led]["dominant_color"])
-    time.sleep(1)
+# leds = detectLeds(url, 0.27, 1400,2500)
+#
+# while 1==1:
+#     leds = readStates(url, leds, 200)
+#     print()
+#     for led in leds:
+#         print(str(led) + " " + leds[led]["led_state"])
+#         #print(leds[led]["dominant_color"])
+#     time.sleep(1)
 
 #from functions import detectLeds, readStates, renameLed, url
