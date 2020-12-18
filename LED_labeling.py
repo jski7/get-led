@@ -13,7 +13,7 @@ from skimage.color import label2rgb, rgb2gray
 detect_th = 0.25
 
 # Motion: image_rgb = io.imread('http://192.168.0.192:8080/shot.jpg')
-image_rgb = io.imread('http://192.168.0.52/html/cam_pic_new.php?time=1604595629853&pDelay=40000')
+image_rgb = io.imread('http://192.168.8.105/html/cam_pic_new.php?time=1604595629853&pDelay=40000')
 
 #LOCAL SOURCE image_rgb = io.imread('examples/leds_off.jpg')
 image = rgb2gray(image_rgb)
