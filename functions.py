@@ -146,62 +146,77 @@ def translateDictionary(dict):
         dict[new] = dict.pop(old)
 
 
-def chartLeds(count, leds_dict):
-    meas_dict = {}
-    for led in leds_dict:
-        meas_dict[led] = {"brightness": [], "r": [], "g": [], "b": []}
+def measureStates(count, leds_dict):
 
-    print(meas_dict)
+    # dict={
+    #     led:{
+    #         state:
+    #             {thresholds
+    #              }
+    #     }
+    # }
+
+    temp_measures = {}
+    for led in leds_dict.keys():
+        temp_measures[led] = {"brightness": [], "r": [], "g": [], "b": []}
 
     fig, ax = plt.subplots()
     ax.set(xlabel='measurements', title='values measured for red led')
 
-    i = 0
-    while i < count:
-        i += 1
+    for i in range(0, count):
         snap = captureSnap(url)
         imCrop = snap[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
         leds_dict = readStates(imCrop, leds_dict, 30)
 
         print()
-        for led in leds_dict:
-            print(str(led) + " " + leds_dict[led]["led_state"])
-            print(leds_dict[led]["dominant_color"])
-
-        # for measurement purpouses historic measures
         d = 0  # distance between leds_dict on chart
-        for led_name in leds_dict:
-            meas_dict[led_name]["index"] = list(meas_dict.keys()).index(led_name)
-            meas_dict[led_name]["brightness"].append(((leds_dict[led_name]["dominant_color"][0] +
-                                                       leds_dict[led_name]["dominant_color"][1] +
-                                                       leds_dict[led_name]["dominant_color"][2]) / 3) // 1)
-            meas_dict[led_name]["r"].append(leds_dict[led_name]["dominant_color"][0])
-            meas_dict[led_name]["g"].append(leds_dict[led_name]["dominant_color"][1])
-            meas_dict[led_name]["b"].append(leds_dict[led_name]["dominant_color"][2])
+        for led_name in leds_dict.keys():
+            print(str(led_name) + " " + leds_dict[led_name]["led_state"])
+            print(leds_dict[led_name]["dominant_color"])
+            temp_measures[led_name]["brightness"].append((int((sum(leds_dict[led_name]["dominant_color"])) / 3)))
+            temp_measures[led_name]["r"].append(leds_dict[led_name]["dominant_color"][0])
+            temp_measures[led_name]["g"].append(leds_dict[led_name]["dominant_color"][1])
+            temp_measures[led_name]["b"].append(leds_dict[led_name]["dominant_color"][2])
+            temp_measures[led_name]["index"] = list(temp_measures.keys()).index(led_name)
 
+            # for measurement purpouses historic measures
             # brightness in 0-255
-
-            ax.plot(meas_dict[led_name]["brightness"],
-                    np.zeros_like(meas_dict[led_name]["brightness"]) + int(meas_dict[led_name]["index"]) + d, '*',
-                    meas_dict[led_name]["r"],
-                    np.zeros_like(meas_dict[led_name]["r"]) + int(meas_dict[led_name]["index"]) + (2 / 4) + d, '*',
-                    meas_dict[led_name]["g"],
-                    np.zeros_like(meas_dict[led_name]["g"]) + int(meas_dict[led_name]["index"]) + (3 / 4) + d, '*',
-                    meas_dict[led_name]["b"],
-                    np.zeros_like(meas_dict[led_name]["b"]) + int(meas_dict[led_name]["index"]) + 1 + d, '*', )
+            ax.plot(temp_measures[led_name]["brightness"],
+                np.zeros_like(temp_measures[led_name]["brightness"]) + int(temp_measures[led_name]["index"]) + d, '*',
+                temp_measures[led_name]["r"],
+                np.zeros_like(temp_measures[led_name]["r"]) + int(temp_measures[led_name]["index"]) + (2 / 4) + d, '*',
+                temp_measures[led_name]["g"],
+                np.zeros_like(temp_measures[led_name]["g"]) + int(temp_measures[led_name]["index"]) + (3 / 4) + d, '*',
+                temp_measures[led_name]["b"],
+                np.zeros_like(temp_measures[led_name]["b"]) + int(temp_measures[led_name]["index"]) + 1 + d, '*', )
             d += 1
         print(i)
-
-    print(meas_dict)
     plt.show()
-    for led in meas_dict.keys():
-        meas_dict[led]["brightness_low"] = int(0.5 * min(meas_dict[led]["brightness"]))
-        meas_dict[led]["r_low"] = int(0.9 * min(meas_dict[led]["r"]))
-        meas_dict[led]["r_high"] = int(1.1 * max(meas_dict[led]["r"]))
-        meas_dict[led]["g_low"] = int(0.9 * min(meas_dict[led]["g"]))
-        meas_dict[led]["g_high"] = int(1.1 * max(meas_dict[led]["g"]))
-        meas_dict[led]["b_low"] = int(0.9 * min(meas_dict[led]["b"]))
-        meas_dict[led]["b_high"] = int(1.1 * max(meas_dict[led]["b"]))
+
+    if 'meas_dict' not in locals():
+        meas_dict = {}
+
+    for led_name in leds_dict.keys():
+        init_state = input("What is the current state of led " + led_name + " ?\n")
+        if led_name not in meas_dict:
+            meas_dict[led_name] = {}
+        if init_state not in meas_dict[led_name]:
+            meas_dict[led_name][init_state] = temp_measures[led_name]
+        else:
+            meas_dict[led_name][init_state]["brightness"].append(temp_measures[led_name]["brightness"])
+            meas_dict[led_name][init_state]["r"].append(temp_measures[led_name]["brightness"])
+            meas_dict[led_name][init_state]["g"].append(temp_measures[led_name]["brightness"])
+            meas_dict[led_name][init_state]["b"].append(temp_measures[led_name]["brightness"])
+            meas_dict[led_name][init_state]["index"].append(temp_measures[led_name]["brightness"])
+
+        meas_dict[led_name][init_state]["brightness_low"] = int(0.5 * min(meas_dict[led_name][init_state]["brightness"]))
+        meas_dict[led_name][init_state]["r_low"] = int(0.9 * min(meas_dict[led_name][init_state]["r"]))
+        meas_dict[led_name][init_state]["r_high"] = int(1.1 * max(meas_dict[led_name][init_state]["r"]))
+        meas_dict[led_name][init_state]["g_low"] = int(0.9 * min(meas_dict[led_name][init_state]["g"]))
+        meas_dict[led_name][init_state]["g_high"] = int(1.1 * max(meas_dict[led_name][init_state]["g"]))
+        meas_dict[led_name][init_state]["b_low"] = int(0.9 * min(meas_dict[led_name][init_state]["b"]))
+        meas_dict[led_name][init_state]["b_high"]= int(1.1 * min(meas_dict[led_name][init_state]["b"]))
+
     return meas_dict
 ### Program
 
@@ -214,15 +229,15 @@ r = cv2.selectROI("ROI", snap)
 cv2.destroyWindow('ROI')
 imCrop = snap[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
 leds = detectLeds(imCrop, 0.05, 1500, 2200)
-translateDictionary(leds)
-measurement_dict = chartLeds(5, leds)
+#translateDictionary(leds)
+measurement_dict = measureStates(5, leds)
 print(measurement_dict)
-leds = readStatesMeasured(imCrop, leds, measurement_dict)
-
-# for led in leds:
-#     print(led["dominant_color"], measurement_dict[led]["r_low"], measurement_dict[led]["r_high"], measurement_dict[led]["g_low"], measurement_dict[led]["g_high"], measurement_dict[led]["b_low"], measurement_dict[led]["b_high"])
-
-for led in leds.keys():
-    print(led + " state is: " + leds[led]["led_state"])
+# leds = measureStates(imCrop, leds, measurement_dict)
+#
+# # for led in leds:
+# #     print(led["dominant_color"], measurement_dict[led]["r_low"], measurement_dict[led]["r_high"], measurement_dict[led]["g_low"], measurement_dict[led]["g_high"], measurement_dict[led]["b_low"], measurement_dict[led]["b_high"])
+#
+# for led in leds.keys():
+#     print(led + " state is: " + leds[led]["led_state"])
 
 #from functions import detectLeds, readStates, renameLed, url
