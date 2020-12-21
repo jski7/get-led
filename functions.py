@@ -69,27 +69,27 @@ def readStates(file, leds_dict, brightness_th):
         color_thief = ColorThief("temp/" + str(str(key)) + ".jpg")
         dominant_color = color_thief.get_color(quality=1)
         ## TBD: Set color boundaries for better recognition
-        state = "not recognized"
-        if sum(dominant_color) > brightness_th:
-            if dominant_color[0] != dominant_color[1] and dominant_color[1] != dominant_color[2] and dominant_color[0] != dominant_color[2]:
-                if dominant_color[0] in range(30, 50) and\
-                        dominant_color[1] in range(200,230) and\
-                        dominant_color[2] in range(215,255):
-                    state = "yellow"
-                elif dominant_color[0] in range(30, 50) and \
-                            dominant_color[1] in range(220, 255) and \
-                            dominant_color[2] in range(5, 40):
-                    state = "green"
-                elif dominant_color[0] in range(0, 30) and \
-                            dominant_color[1] in range(0, 210) and \
-                            dominant_color[2] in range(30, 255):
-                    state = "red"
-            else:
-                state = "not recognized"
-        else:
-            state = "off"
+        # state = "not recognized"
+        # if sum(dominant_color) > brightness_th:
+        #     if dominant_color[0] != dominant_color[1] and dominant_color[1] != dominant_color[2] and dominant_color[0] != dominant_color[2]:
+        #         if dominant_color[0] in range(30, 50) and\
+        #                 dominant_color[1] in range(200,230) and\
+        #                 dominant_color[2] in range(215,255):
+        #             state = "yellow"
+        #         elif dominant_color[0] in range(30, 50) and \
+        #                     dominant_color[1] in range(220, 255) and \
+        #                     dominant_color[2] in range(5, 40):
+        #             state = "green"
+        #         elif dominant_color[0] in range(0, 30) and \
+        #                     dominant_color[1] in range(0, 210) and \
+        #                     dominant_color[2] in range(30, 255):
+        #             state = "red"
+        #     else:
+        #         state = "not recognized"
+        # else:
+        #     state = "off"
         leds[key]["dominant_color"] = dominant_color
-        leds[key]["led_state"] = state
+        # leds[key]["led_state"] = state
     return leds
 
 
@@ -97,9 +97,7 @@ def readStatesMeasured(file, leds_dict, measures):
     #   Get a photo
     #   Check state of leds
     #   put it into dict from detect leds
-
     for key in leds_dict.keys():
-        # image_rgb = io.imread(file)
         image_rgb = file
         cropped = image_rgb[leds_dict[key]["top"]:leds_dict[key]["bottom"],
                   leds_dict[key]["left"]:leds_dict[key]["right"]]
@@ -107,31 +105,22 @@ def readStatesMeasured(file, leds_dict, measures):
         color_thief = ColorThief("temp/" + str(str(key)) + ".jpg")
         dominant_color = color_thief.get_color(quality=1)
         ## TBD: Set color boundaries for better recognition
-        state = "not recognized"
-        print(dominant_color, measures[key]["brightness_low"])
-        print(measures[key]["r_low"], measures[key]["r_high"])
-        print(measures[key]["g_low"], measures[key]["g_high"])
-        print(measures[key]["b_low"], measures[key]["b_high"])
-        if sum(dominant_color) / 3 > measures[key]["brightness_low"]:
-            if dominant_color[0] != dominant_color[1] and dominant_color[1] != dominant_color[2] and dominant_color[0] != dominant_color[2]:
-                if dominant_color[0] in range(measures[key]["r_low"], measures[key]["r_high"]) and \
-                        dominant_color[1] in range(measures[key]["g_low"], measures[key]["g_high"]) and \
-                        dominant_color[2] in range(measures[key]["b_low"], measures[key]["b_high"]):
-                    state = "yellow"
-                elif dominant_color[0] in range(measures[key]["r_low"], measures[key]["r_high"]) and \
-                        dominant_color[1] in range(measures[key]["g_low"], measures[key]["g_high"]) and \
-                        dominant_color[2] in range(measures[key]["b_low"], measures[key]["b_high"]):
-                    state = "green"
-                elif dominant_color[0] in range(measures[key]["r_low"], measures[key]["r_high"]) and \
-                        dominant_color[1] in range(measures[key]["g_low"], measures[key]["g_high"]) and \
-                        dominant_color[2] in range(measures[key]["b_low"], measures[key]["b_high"]):
-                    state = "red"
+        for init_state in measures[key].keys():
+            # image_rgb = io.imread(file)
+            state = "not recognized"
+            # print(measures[key][init_state]["brightness_low"], int(sum(dominant_color)/3))
+            # print(measures[key][init_state]["r_low"], measures[key][init_state]["r_high"])
+            # print(measures[key][init_state]["g_low"], measures[key][init_state]["g_high"])
+            # print(measures[key][init_state]["b_low"], measures[key][init_state]["b_high"])
+            if int(sum(dominant_color)) / 3 > measures[key][init_state]["brightness_low"]:
+                if dominant_color[0] in range(measures[key][init_state]["r_low"], measures[key][init_state]["r_high"]) and \
+                        dominant_color[1] in range(measures[key][init_state]["g_low"], measures[key][init_state]["g_high"]) and \
+                        dominant_color[2] in range(measures[key][init_state]["b_low"], measures[key][init_state]["b_high"]):
+                    state = init_state
             else:
-                state = "not recognized"
-        else:
-            state = "off"
-        leds[key]["dominant_color"] = dominant_color
-        leds[key]["led_state"] = state
+                state = "off"
+            leds[key]["dominant_color"] = dominant_color
+            leds[key]["led_state"] = state
     return leds
 
 def translateDictionary(dict):
@@ -164,6 +153,7 @@ def measureStates(count, leds_dict):
     ax.set(xlabel='measurements', title='values measured for red led')
 
     for i in range(0, count):
+        print("measurement " + str(i))
         snap = captureSnap(url)
         imCrop = snap[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
         leds_dict = readStates(imCrop, leds_dict, 30)
@@ -171,8 +161,6 @@ def measureStates(count, leds_dict):
         print()
         d = 0  # distance between leds_dict on chart
         for led_name in leds_dict.keys():
-            print(str(led_name) + " " + leds_dict[led_name]["led_state"])
-            print(leds_dict[led_name]["dominant_color"])
             temp_measures[led_name]["brightness"].append((int((sum(leds_dict[led_name]["dominant_color"])) / 3)))
             temp_measures[led_name]["r"].append(leds_dict[led_name]["dominant_color"][0])
             temp_measures[led_name]["g"].append(leds_dict[led_name]["dominant_color"][1])
@@ -190,8 +178,7 @@ def measureStates(count, leds_dict):
                 temp_measures[led_name]["b"],
                 np.zeros_like(temp_measures[led_name]["b"]) + int(temp_measures[led_name]["index"]) + 1 + d, '*', )
             d += 1
-        print(i)
-    plt.show()
+    #plt.show()
 
     if 'meas_dict' not in locals():
         meas_dict = {}
@@ -210,12 +197,12 @@ def measureStates(count, leds_dict):
             meas_dict[led_name][init_state]["index"].append(temp_measures[led_name]["brightness"])
 
         meas_dict[led_name][init_state]["brightness_low"] = int(0.5 * min(meas_dict[led_name][init_state]["brightness"]))
-        meas_dict[led_name][init_state]["r_low"] = int(0.9 * min(meas_dict[led_name][init_state]["r"]))
-        meas_dict[led_name][init_state]["r_high"] = int(1.1 * max(meas_dict[led_name][init_state]["r"]))
-        meas_dict[led_name][init_state]["g_low"] = int(0.9 * min(meas_dict[led_name][init_state]["g"]))
-        meas_dict[led_name][init_state]["g_high"] = int(1.1 * max(meas_dict[led_name][init_state]["g"]))
-        meas_dict[led_name][init_state]["b_low"] = int(0.9 * min(meas_dict[led_name][init_state]["b"]))
-        meas_dict[led_name][init_state]["b_high"]= int(1.1 * min(meas_dict[led_name][init_state]["b"]))
+        meas_dict[led_name][init_state]["r_low"] = int(0.9 * min(meas_dict[led_name][init_state]["r"]) - 2)
+        meas_dict[led_name][init_state]["r_high"] = int(1.1 * max(meas_dict[led_name][init_state]["r"]) + 2)
+        meas_dict[led_name][init_state]["g_low"] = int(0.9 * min(meas_dict[led_name][init_state]["g"]) - 2)
+        meas_dict[led_name][init_state]["g_high"] = int(1.1 * max(meas_dict[led_name][init_state]["g"]) + 2)
+        meas_dict[led_name][init_state]["b_low"] = int(0.9 * min(meas_dict[led_name][init_state]["b"]) - 2)
+        meas_dict[led_name][init_state]["b_high"]= int(1.1 * min(meas_dict[led_name][init_state]["b"]) + 2)
 
     return meas_dict
 ### Program
@@ -232,6 +219,20 @@ leds = detectLeds(imCrop, 0.05, 1500, 2200)
 #translateDictionary(leds)
 measurement_dict = measureStates(5, leds)
 print(measurement_dict)
+while 1==1:
+    t = time.time()
+    snap = captureSnap(url)
+    print(time.time() - t)
+    t = time.time()
+    imCrop = snap[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
+    print(time.time() - t)
+    t = time.time()
+    leds = readStatesMeasured(imCrop, leds, measurement_dict)
+    print(time.time() - t)
+    t = time.time()
+    for key in leds.keys():
+        print(leds[key]["led_state"])
+    print(time.time() - t)
 # leds = measureStates(imCrop, leds, measurement_dict)
 #
 # # for led in leds:
