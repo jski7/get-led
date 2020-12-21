@@ -49,10 +49,10 @@ def detectLeds(file, detect_th, min_size, max_size):
             ax.add_patch(rect)
             plt.text(minc, minr-8, "led_"+str(region.label), color="r")
 
-    ax.set_axis_off()
-    plt.tight_layout()
-
-    plt.show()
+    # ax.set_axis_off()
+    # plt.tight_layout()
+    #
+    # plt.show()
 
     return leds
 
@@ -149,8 +149,8 @@ def measureStates(count, leds_dict):
     for led in leds_dict.keys():
         temp_measures[led] = {"brightness": [], "r": [], "g": [], "b": []}
 
-    fig, ax = plt.subplots()
-    ax.set(xlabel='measurements', title='values measured for red led')
+    # fig, ax = plt.subplots()
+    # ax.set(xlabel='measurements', title='values measured for red led')
 
     for i in range(0, count):
         print("measurement " + str(i))
@@ -169,15 +169,15 @@ def measureStates(count, leds_dict):
 
             # for measurement purpouses historic measures
             # brightness in 0-255
-            ax.plot(temp_measures[led_name]["brightness"],
-                np.zeros_like(temp_measures[led_name]["brightness"]) + int(temp_measures[led_name]["index"]) + d, '*',
-                temp_measures[led_name]["r"],
-                np.zeros_like(temp_measures[led_name]["r"]) + int(temp_measures[led_name]["index"]) + (2 / 4) + d, '*',
-                temp_measures[led_name]["g"],
-                np.zeros_like(temp_measures[led_name]["g"]) + int(temp_measures[led_name]["index"]) + (3 / 4) + d, '*',
-                temp_measures[led_name]["b"],
-                np.zeros_like(temp_measures[led_name]["b"]) + int(temp_measures[led_name]["index"]) + 1 + d, '*', )
-            d += 1
+            # ax.plot(temp_measures[led_name]["brightness"],
+            #     np.zeros_like(temp_measures[led_name]["brightness"]) + int(temp_measures[led_name]["index"]) + d, '*',
+            #     temp_measures[led_name]["r"],
+            #     np.zeros_like(temp_measures[led_name]["r"]) + int(temp_measures[led_name]["index"]) + (2 / 4) + d, '*',
+            #     temp_measures[led_name]["g"],
+            #     np.zeros_like(temp_measures[led_name]["g"]) + int(temp_measures[led_name]["index"]) + (3 / 4) + d, '*',
+            #     temp_measures[led_name]["b"],
+            #     np.zeros_like(temp_measures[led_name]["b"]) + int(temp_measures[led_name]["index"]) + 1 + d, '*', )
+            # d += 1
     #plt.show()
 
     if 'meas_dict' not in locals():
