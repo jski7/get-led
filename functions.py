@@ -6,6 +6,8 @@ import cv2
 import time
 import matplotlib.pyplot as plt
 import numpy as np
+from picamera import PiCamera
+from time import sleep
 
 from skimage import io
 from skimage.segmentation import clear_border
@@ -13,14 +15,12 @@ from skimage.measure import label, regionprops
 from skimage.morphology import closing, square
 from skimage.color import label2rgb, rgb2gray
 
-
 def detectLeds(file, detect_th, min_size, max_size):
 
     #   Init lamp test
     #   Get a photo from camera when leds are on
     #   Create dict with all leds positions
     leds = {}                       # led objects
-    #image_rgb = io.imread(file)
     image_rgb = file
     image = rgb2gray(image_rgb)
     # apply threshold
@@ -56,7 +56,7 @@ def detectLeds(file, detect_th, min_size, max_size):
 
     return leds
 
-def readStates(file, leds_dict, brightness_th):
+def readStates(file, leds_dict):
     #   Get a photo
     #   Check state of leds
     #   put it into dict from detect leds
@@ -68,28 +68,7 @@ def readStates(file, leds_dict, brightness_th):
         skimage.io.imsave("temp/" + str(str(key)) + ".jpg", cropped,  check_contrast=False)
         color_thief = ColorThief("temp/" + str(str(key)) + ".jpg")
         dominant_color = color_thief.get_color(quality=1)
-        ## TBD: Set color boundaries for better recognition
-        # state = "not recognized"
-        # if sum(dominant_color) > brightness_th:
-        #     if dominant_color[0] != dominant_color[1] and dominant_color[1] != dominant_color[2] and dominant_color[0] != dominant_color[2]:
-        #         if dominant_color[0] in range(30, 50) and\
-        #                 dominant_color[1] in range(200,230) and\
-        #                 dominant_color[2] in range(215,255):
-        #             state = "yellow"
-        #         elif dominant_color[0] in range(30, 50) and \
-        #                     dominant_color[1] in range(220, 255) and \
-        #                     dominant_color[2] in range(5, 40):
-        #             state = "green"
-        #         elif dominant_color[0] in range(0, 30) and \
-        #                     dominant_color[1] in range(0, 210) and \
-        #                     dominant_color[2] in range(30, 255):
-        #             state = "red"
-        #     else:
-        #         state = "not recognized"
-        # else:
-        #     state = "off"
         leds[key]["dominant_color"] = dominant_color
-        # leds[key]["led_state"] = state
     return leds
 
 
@@ -106,7 +85,6 @@ def readStatesMeasured(file, leds_dict, measures):
         dominant_color = color_thief.get_color(quality=1)
         ## TBD: Set color boundaries for better recognition
         for init_state in measures[key].keys():
-            # image_rgb = io.imread(file)
             state = "not recognized"
             # print(measures[key][init_state]["brightness_low"], int(sum(dominant_color)/3))
             # print(measures[key][init_state]["r_low"], measures[key][init_state]["r_high"])
@@ -149,14 +127,16 @@ def measureStates(count, leds_dict):
     for led in leds_dict.keys():
         temp_measures[led] = {"brightness": [], "r": [], "g": [], "b": []}
 
-    # fig, ax = plt.subplots()
-    # ax.set(xlabel='measurements', title='values measured for red led')
+    fig, ax = plt.subplots()
+    ax.set(xlabel='measurements', title='values measured for red led')
 
     for i in range(0, count):
-        print("measurement " + str(i))
-        snap = captureSnap(url)
+        camera.capture('temp/camera.jpg')
+        time.sleep(2)
+        print("measurement " + str(i+1))
+        snap = io.imread(url)
         imCrop = snap[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
-        leds_dict = readStates(imCrop, leds_dict, 30)
+        leds_dict = readStates(imCrop, leds_dict)
 
         print()
         d = 0  # distance between leds_dict on chart
@@ -169,16 +149,16 @@ def measureStates(count, leds_dict):
 
             # for measurement purpouses historic measures
             # brightness in 0-255
-            # ax.plot(temp_measures[led_name]["brightness"],
-            #     np.zeros_like(temp_measures[led_name]["brightness"]) + int(temp_measures[led_name]["index"]) + d, '*',
-            #     temp_measures[led_name]["r"],
-            #     np.zeros_like(temp_measures[led_name]["r"]) + int(temp_measures[led_name]["index"]) + (2 / 4) + d, '*',
-            #     temp_measures[led_name]["g"],
-            #     np.zeros_like(temp_measures[led_name]["g"]) + int(temp_measures[led_name]["index"]) + (3 / 4) + d, '*',
-            #     temp_measures[led_name]["b"],
-            #     np.zeros_like(temp_measures[led_name]["b"]) + int(temp_measures[led_name]["index"]) + 1 + d, '*', )
-            # d += 1
-    #plt.show()
+            ax.plot(temp_measures[led_name]["brightness"],
+                np.zeros_like(temp_measures[led_name]["brightness"]) + int(temp_measures[led_name]["index"]) + d, '*',
+                temp_measures[led_name]["r"],
+                np.zeros_like(temp_measures[led_name]["r"]) + int(temp_measures[led_name]["index"]) + (2 / 4) + d, '*',
+                temp_measures[led_name]["g"],
+                np.zeros_like(temp_measures[led_name]["g"]) + int(temp_measures[led_name]["index"]) + (3 / 4) + d, '*',
+                temp_measures[led_name]["b"],
+                np.zeros_like(temp_measures[led_name]["b"]) + int(temp_measures[led_name]["index"]) + 1 + d, '*', )
+            d += 1
+    plt.show()
 
     if 'meas_dict' not in locals():
         meas_dict = {}
@@ -196,43 +176,51 @@ def measureStates(count, leds_dict):
             meas_dict[led_name][init_state]["b"].append(temp_measures[led_name]["brightness"])
             meas_dict[led_name][init_state]["index"].append(temp_measures[led_name]["brightness"])
 
-        meas_dict[led_name][init_state]["brightness_low"] = int(0.5 * min(meas_dict[led_name][init_state]["brightness"]))
+        meas_dict[led_name][init_state]["brightness_low"] = int(0.7 * min(meas_dict[led_name][init_state]["brightness"]))
         meas_dict[led_name][init_state]["r_low"] = int(0.9 * min(meas_dict[led_name][init_state]["r"]) - 2)
         meas_dict[led_name][init_state]["r_high"] = int(1.1 * max(meas_dict[led_name][init_state]["r"]) + 2)
         meas_dict[led_name][init_state]["g_low"] = int(0.9 * min(meas_dict[led_name][init_state]["g"]) - 2)
         meas_dict[led_name][init_state]["g_high"] = int(1.1 * max(meas_dict[led_name][init_state]["g"]) + 2)
         meas_dict[led_name][init_state]["b_low"] = int(0.9 * min(meas_dict[led_name][init_state]["b"]) - 2)
-        meas_dict[led_name][init_state]["b_high"]= int(1.1 * min(meas_dict[led_name][init_state]["b"]) + 2)
+        meas_dict[led_name][init_state]["b_high"] = int(1.1 * min(meas_dict[led_name][init_state]["b"]) + 2)
 
     return meas_dict
 ### Program
 
+camera = PiCamera()
+camera.rotation = 180
+camera.resolution = (400, 300)
+camera.framerate = 30
+camera.brightness = 60 #0-100
+camera.contrast = 80 #0-100
+camera.image_effect = 'none'
+camera.exposure_mode = 'off'
+camera.awb_mode = 'auto'
+# camera.start_preview()
+# #camera.capture()
+# sleep(3)
+# camera.stop_preview()
 
-#init = 'examples/init.jpg'
-url = 'http://192.168.8.105/html/cam_pic_new.php?time=1604595629853&pDelay=40000'
+camera.capture('temp/camera.jpg')
+time.sleep(1)
+url = 'temp/camera.jpg'
 
-snap = captureSnap(url)
+snap = io.imread(url)
 r = cv2.selectROI("ROI", snap)
 cv2.destroyWindow('ROI')
 imCrop = snap[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
-leds = detectLeds(imCrop, 0.05, 1500, 2200)
+leds = detectLeds(imCrop, 0.05, 100, 250)
 #translateDictionary(leds)
-measurement_dict = measureStates(5, leds)
+measurement_dict = measureStates(10, leds)
 print(measurement_dict)
 while 1==1:
-    t = time.time()
-    snap = captureSnap(url)
-    print(time.time() - t)
-    t = time.time()
+    camera.capture('temp/camera.jpg')
+    time.sleep(2)
+    snap = io.imread(url)
     imCrop = snap[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
-    print(time.time() - t)
-    t = time.time()
     leds = readStatesMeasured(imCrop, leds, measurement_dict)
-    print(time.time() - t)
-    t = time.time()
     for key in leds.keys():
         print(leds[key]["led_state"])
-    print(time.time() - t)
 # leds = measureStates(imCrop, leds, measurement_dict)
 #
 # # for led in leds:
