@@ -15,7 +15,7 @@ from skimage.measure import label, regionprops
 from skimage.morphology import closing, square
 from skimage.color import label2rgb, rgb2gray
 
-def detectLeds(file, detect_th, min_size, max_size):
+def detectLeds(file, detect_th, min_size):
 
     #   Init lamp test
     #   Get a photo from camera when leds are on
@@ -39,7 +39,7 @@ def detectLeds(file, detect_th, min_size, max_size):
     for region in regionprops(label_image):
         # take regions with large enough areas
         print("Size:" + str(region.area))
-        if region.area in range(min_size, max_size):
+        if region.area > min_size:
             # draw rectangle around segmented item
             minr, minc, maxr, maxc = region.bbox
             leds["led_"+str(region.label)] = {"led_state": "null", "dominant_color": ("null", "null", "null"), "top": minr,
@@ -132,7 +132,7 @@ def measureStates(count, leds_dict):
 
     for i in range(0, count):
         camera.capture('temp/camera.jpg')
-        time.sleep(2)
+        time.sleep(1)
         print("measurement " + str(i+1))
         snap = io.imread(url)
         imCrop = snap[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
@@ -188,14 +188,17 @@ def measureStates(count, leds_dict):
 ### Program
 
 camera = PiCamera()
+sleep(1)
 camera.rotation = 180
-camera.resolution = (400, 300)
-camera.framerate = 30
-camera.brightness = 60 #0-100
+camera.resolution = (800, 600)
+camera.framerate = 24
+camera.brightness = 45 #0-100
 camera.contrast = 80 #0-100
 camera.image_effect = 'none'
 camera.exposure_mode = 'off'
-camera.awb_mode = 'auto'
+camera.shutter_speed = 5000
+camera.iso = 500
+camera.awb_mode = 'flash'
 # camera.start_preview()
 # #camera.capture()
 # sleep(3)
@@ -209,7 +212,7 @@ snap = io.imread(url)
 r = cv2.selectROI("ROI", snap)
 cv2.destroyWindow('ROI')
 imCrop = snap[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
-leds = detectLeds(imCrop, 0.05, 100, 250)
+leds = detectLeds(imCrop, 0.05, 800)
 #translateDictionary(leds)
 measurement_dict = measureStates(10, leds)
 print(measurement_dict)
