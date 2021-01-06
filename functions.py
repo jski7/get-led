@@ -1,6 +1,6 @@
 import matplotlib.patches as mpatches
 import skimage
-from colorthief import ColorThief
+from dominantcolors import get_image_dominant_colors
 import cv2
 import time
 import matplotlib.pyplot as plt
@@ -33,8 +33,8 @@ def detectLeds(file, detect_th, min_size):
     image_label_overlay = label2rgb(label_image, image=image, bg_label=0)
 
     # measuring chart
-    # fig, ax = plt.subplots(figsize=(10, 6))
-    # ax.imshow(image_label_overlay)
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.imshow(image_label_overlay)
 
     for region in regionprops(label_image):
         # take regions with large enough areas
@@ -49,10 +49,10 @@ def detectLeds(file, detect_th, min_size):
             ax.add_patch(rect)
             plt.text(minc, minr-8, "led_"+str(region.label), color="r")
 
-    # ax.set_axis_off()
-    # plt.tight_layout()
-    #
-    # plt.show()
+    ax.set_axis_off()
+    plt.tight_layout()
+
+    plt.show()
 
     return leds
 
@@ -62,12 +62,10 @@ def readStates(file, leds_dict):
     #   put it into dict from detect leds
 
     for key in leds_dict.keys():
-        #image_rgb = io.imread(file)
         image_rgb = file
         cropped = image_rgb[leds_dict[key]["top"]:leds_dict[key]["bottom"], leds_dict[key]["left"]:leds_dict[key]["right"]]
-        skimage.io.imsave("temp/" + str(str(key)) + ".jpg", cropped,  check_contrast=False)
-        color_thief = ColorThief("temp/" + str(str(key)) + ".jpg")
-        dominant_color = color_thief.get_color(quality=1)
+        cv2.imwrite("temp/" + str(str(key)) + ".jpg", cropped)
+        dominant_color = tuple(get_image_dominant_colors(image_path="temp/" + str(str(key)) + ".jpg", num_colors=1)[0])
         leds[key]["dominant_color"] = dominant_color
     return leds
 
@@ -80,9 +78,8 @@ def readStatesMeasured(file, leds_dict, measures):
         image_rgb = file
         cropped = image_rgb[leds_dict[key]["top"]:leds_dict[key]["bottom"],
                   leds_dict[key]["left"]:leds_dict[key]["right"]]
-        skimage.io.imsave("temp/" + str(str(key)) + ".jpg", cropped, check_contrast=False)
-        color_thief = ColorThief("temp/" + str(str(key)) + ".jpg")
-        dominant_color = color_thief.get_color(quality=1)
+        cv2.imwrite("temp/" + str(str(key)) + ".jpg", cropped)
+        dominant_color = tuple(get_image_dominant_colors(image_path="temp/" + str(str(key)) + ".jpg", num_colors=1)[0])
         ## TBD: Set color boundaries for better recognition
         for init_state in measures[key].keys():
             state = "not recognized"
@@ -134,7 +131,6 @@ def measureStates(count, leds_dict):
         image = snapper()
         print("measurement " + str(i+1))
         imCrop = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
-        time.sleep(1)
         # cv2.imshow('image', imCrop)
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
@@ -187,32 +183,33 @@ def measureStates(count, leds_dict):
         meas_dict[led_name][init_state]["b_high"] = int(1.1 * max(meas_dict[led_name][init_state]["b"]) + 2)
     return meas_dict
 
+camera = PiCamera()
+camera.rotation = 180
+camera.resolution = (416, 304)
+camera.framerate = 40
+camera.brightness = 70  # 0-100
+camera.contrast = 80  # 0-100
+camera.exposure_compensation = 0
+camera.image_effect = 'none'
+camera.exposure_mode = 'off'
+camera.shutter_speed = 16000
+camera.saturation = 0
+camera.sharpness = -100
+camera.iso = 0
+# camera.awb_mode = 'auto'
+camera.awb_mode = 'off'
+camera.awb_gains = (Fraction(77, 64), Fraction(793, 256))
+
 def snapper():
-    camera = PiCamera()
-    camera.rotation = 180
-    camera.resolution = (416, 304)
-    camera.framerate = 40
-    camera.brightness = 70  # 0-100
-    camera.contrast = 80  # 0-100
-    camera.exposure_compensation = 0
-    camera.image_effect = 'none'
-    camera.exposure_mode = 'off'
-    camera.shutter_speed = 8200
-    camera.saturation = 0
-    camera.sharpness = -100
-    camera.iso = 0
-    # camera.awb_mode = 'auto'
-    camera.awb_mode = 'off'
-    camera.awb_gains = (Fraction(77, 64), Fraction(793, 256))
     with picamera.array.PiRGBArray(camera) as stream:
         camera.capture(stream, format='bgr')
+        time.sleep(0.2)
         # At this point the image is available as stream.array
         image = stream.array
-    camera.close()
+    # camera.close()
     return image
+
 ### Program
-
-
 
 image = snapper()
 r = cv2.selectROI("ROI", image)
@@ -226,20 +223,9 @@ print(measurement_dict)
 while 1 == 1:
     t = time.time()
     image = snapper()
-    print(time.time() - t)
-    t = time.time()
     imCrop = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
     leds = readStatesMeasured(imCrop, leds, measurement_dict)
-    print(time.time() - t)
     for key in leds.keys():
         print(leds[key]["led_state"])
-        print(leds[key]["dominant_color"])
-# leds = measureStates(imCrop, leds, measurement_dict)
-#
-# # for led in leds:
-# #     print(led["dominant_color"], measurement_dict[led]["r_low"], measurement_dict[led]["r_high"], measurement_dict[led]["g_low"], measurement_dict[led]["g_high"], measurement_dict[led]["b_low"], measurement_dict[led]["b_high"])
-#
-# for led in leds.keys():
-#     print(led + " state is: " + leds[led]["led_state"])
-
-#from functions import detectLeds, readStates, renameLed, url
+        # print(leds[key]["dominant_color"])
+    print(time.time() - t)
