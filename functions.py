@@ -1,11 +1,9 @@
 import matplotlib.patches as mpatches
 import skimage
 from colorthief import ColorThief
-from capture import captureSnap, cropSnap
 import cv2
 import time
 import matplotlib.pyplot as plt
-import numpy as np
 from picamera import PiCamera
 import picamera.array
 from fractions import Fraction
@@ -34,8 +32,9 @@ def detectLeds(file, detect_th, min_size):
     # and leave `bg_color` as `None` and `kind` as `overlay`
     image_label_overlay = label2rgb(label_image, image=image, bg_label=0)
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.imshow(image_label_overlay)
+    # measuring chart
+    # fig, ax = plt.subplots(figsize=(10, 6))
+    # ax.imshow(image_label_overlay)
 
     for region in regionprops(label_image):
         # take regions with large enough areas
@@ -128,16 +127,17 @@ def measureStates(count, leds_dict):
     for led in leds_dict.keys():
         temp_measures[led] = {"brightness": [], "r": [], "g": [], "b": []}
 
-    fig, ax = plt.subplots()
-    ax.set(xlabel='measurements', title='values measured for red led')
+    # fig, ax = plt.subplots()
+    # ax.set(xlabel='measurements', title='values measured for red led')
 
     for i in range(0, count):
         image = snapper()
         print("measurement " + str(i+1))
         imCrop = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
-        cv2.imshow('image', imCrop)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        time.sleep(1)
+        # cv2.imshow('image', imCrop)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
         leds_dict = readStates(imCrop, leds_dict)
 
         print()
@@ -151,16 +151,16 @@ def measureStates(count, leds_dict):
 
             # for measurement purpouses historic measures
             # brightness in 0-255
-            ax.plot(temp_measures[led_name]["brightness"],
-                np.zeros_like(temp_measures[led_name]["brightness"]) + int(temp_measures[led_name]["index"]) + d, '*',
-                temp_measures[led_name]["r"],
-                np.zeros_like(temp_measures[led_name]["r"]) + int(temp_measures[led_name]["index"]) + (2 / 4) + d, '*',
-                temp_measures[led_name]["g"],
-                np.zeros_like(temp_measures[led_name]["g"]) + int(temp_measures[led_name]["index"]) + (3 / 4) + d, '*',
-                temp_measures[led_name]["b"],
-                np.zeros_like(temp_measures[led_name]["b"]) + int(temp_measures[led_name]["index"]) + 1 + d, '*', )
-            d += 1
-    plt.show()
+    #         ax.plot(temp_measures[led_name]["brightness"],
+    #             np.zeros_like(temp_measures[led_name]["brightness"]) + int(temp_measures[led_name]["index"]) + d, '*',
+    #             temp_measures[led_name]["r"],
+    #             np.zeros_like(temp_measures[led_name]["r"]) + int(temp_measures[led_name]["index"]) + (2 / 4) + d, '*',
+    #             temp_measures[led_name]["g"],
+    #             np.zeros_like(temp_measures[led_name]["g"]) + int(temp_measures[led_name]["index"]) + (3 / 4) + d, '*',
+    #             temp_measures[led_name]["b"],
+    #             np.zeros_like(temp_measures[led_name]["b"]) + int(temp_measures[led_name]["index"]) + 1 + d, '*', )
+    #         d += 1
+    # plt.show()
 
     if 'meas_dict' not in locals():
         meas_dict = {}
@@ -192,7 +192,7 @@ def snapper():
     camera.rotation = 180
     camera.resolution = (416, 304)
     camera.framerate = 40
-    camera.brightness = 68  # 0-100
+    camera.brightness = 70  # 0-100
     camera.contrast = 80  # 0-100
     camera.exposure_compensation = 0
     camera.image_effect = 'none'
@@ -223,9 +223,11 @@ leds = detectLeds(imCrop, 0.05, 100)
 measurement_dict = measureStates(10, leds)
 print(measurement_dict)
 
-while 1==1:
+while 1 == 1:
     t = time.time()
     image = snapper()
+    print(time.time() - t)
+    t = time.time()
     imCrop = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
     leds = readStatesMeasured(imCrop, leds, measurement_dict)
     print(time.time() - t)
