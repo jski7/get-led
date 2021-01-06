@@ -132,10 +132,12 @@ def measureStates(count, leds_dict):
     ax.set(xlabel='measurements', title='values measured for red led')
 
     for i in range(0, count):
-        time.sleep(1)
         image = snapper()
         print("measurement " + str(i+1))
         imCrop = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
+        cv2.imshow('image', imCrop)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
         leds_dict = readStates(imCrop, leds_dict)
 
         print()
@@ -171,10 +173,10 @@ def measureStates(count, leds_dict):
             meas_dict[led_name][init_state] = temp_measures[led_name]
         else:
             meas_dict[led_name][init_state]["brightness"].append(temp_measures[led_name]["brightness"])
-            meas_dict[led_name][init_state]["r"].append(temp_measures[led_name]["brightness"])
-            meas_dict[led_name][init_state]["g"].append(temp_measures[led_name]["brightness"])
-            meas_dict[led_name][init_state]["b"].append(temp_measures[led_name]["brightness"])
-            meas_dict[led_name][init_state]["index"].append(temp_measures[led_name]["brightness"])
+            meas_dict[led_name][init_state]["r"].append(temp_measures[led_name]["r"])
+            meas_dict[led_name][init_state]["g"].append(temp_measures[led_name]["g"])
+            meas_dict[led_name][init_state]["b"].append(temp_measures[led_name]["b"])
+            meas_dict[led_name][init_state]["index"].append(temp_measures[led_name]["index"])
 
         meas_dict[led_name][init_state]["brightness_low"] = int(0.8 * min(meas_dict[led_name][init_state]["brightness"]))
         meas_dict[led_name][init_state]["r_low"] = int(0.9 * min(meas_dict[led_name][init_state]["r"]) - 2)
@@ -182,8 +184,8 @@ def measureStates(count, leds_dict):
         meas_dict[led_name][init_state]["g_low"] = int(0.9 * min(meas_dict[led_name][init_state]["g"]) - 2)
         meas_dict[led_name][init_state]["g_high"] = int(1.1 * max(meas_dict[led_name][init_state]["g"]) + 2)
         meas_dict[led_name][init_state]["b_low"] = int(0.9 * min(meas_dict[led_name][init_state]["b"]) - 2)
-        meas_dict[led_name][init_state]["b_high"] = int(1.1 * min(meas_dict[led_name][init_state]["b"]) + 2)
-
+        meas_dict[led_name][init_state]["b_high"] = int(1.1 * max(meas_dict[led_name][init_state]["b"]) + 2)
+    print(meas_dict)
     return meas_dict
 
 def snapper():
@@ -218,7 +220,7 @@ cv2.destroyWindow('ROI')
 imCrop = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
 leds = detectLeds(imCrop, 0.05, 100)
 #translateDictionary(leds)
-measurement_dict = measureStates(50, leds)
+measurement_dict = measureStates(10, leds)
 print(measurement_dict)
 while 1==1:
     t = time.time()
@@ -228,6 +230,7 @@ while 1==1:
     leds = readStatesMeasured(imCrop, leds, measurement_dict)
     for key in leds.keys():
         print(leds[key]["led_state"])
+        print(leds[key]["dominant_color"])
     cv2.imshow('image', imCrop)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
