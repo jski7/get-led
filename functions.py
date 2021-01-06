@@ -218,7 +218,7 @@ cv2.destroyWindow('ROI')
 imCrop = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
 leds = detectLeds(imCrop, 0.05, 100)
 #translateDictionary(leds)
-measurement_dict = measureStates(10, leds)
+measurement_dict = measureStates(50, leds)
 print(measurement_dict)
 while 1==1:
     t = time.time()
