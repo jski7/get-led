@@ -7,7 +7,8 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 from picamera import PiCamera
-from time import sleep
+import picamera.array
+from fractions import Fraction
 
 from skimage import io
 from skimage.segmentation import clear_border
@@ -131,11 +132,10 @@ def measureStates(count, leds_dict):
     ax.set(xlabel='measurements', title='values measured for red led')
 
     for i in range(0, count):
-        camera.capture('temp/camera.jpg')
         time.sleep(1)
+        image = snapper()
         print("measurement " + str(i+1))
-        snap = io.imread(url)
-        imCrop = snap[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
+        imCrop = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
         leds_dict = readStates(imCrop, leds_dict)
 
         print()
@@ -164,7 +164,7 @@ def measureStates(count, leds_dict):
         meas_dict = {}
 
     for led_name in leds_dict.keys():
-        init_state = input("What is the current state of led " + led_name + " ?\n")
+        init_state = input("What is the current state of " + led_name + " ?\n")
         if led_name not in meas_dict:
             meas_dict[led_name] = {}
         if init_state not in meas_dict[led_name]:
@@ -176,7 +176,7 @@ def measureStates(count, leds_dict):
             meas_dict[led_name][init_state]["b"].append(temp_measures[led_name]["brightness"])
             meas_dict[led_name][init_state]["index"].append(temp_measures[led_name]["brightness"])
 
-        meas_dict[led_name][init_state]["brightness_low"] = int(0.7 * min(meas_dict[led_name][init_state]["brightness"]))
+        meas_dict[led_name][init_state]["brightness_low"] = int(0.8 * min(meas_dict[led_name][init_state]["brightness"]))
         meas_dict[led_name][init_state]["r_low"] = int(0.9 * min(meas_dict[led_name][init_state]["r"]) - 2)
         meas_dict[led_name][init_state]["r_high"] = int(1.1 * max(meas_dict[led_name][init_state]["r"]) + 2)
         meas_dict[led_name][init_state]["g_low"] = int(0.9 * min(meas_dict[led_name][init_state]["g"]) - 2)
@@ -185,45 +185,52 @@ def measureStates(count, leds_dict):
         meas_dict[led_name][init_state]["b_high"] = int(1.1 * min(meas_dict[led_name][init_state]["b"]) + 2)
 
     return meas_dict
+
+def snapper():
+    camera = PiCamera()
+    camera.rotation = 180
+    camera.resolution = (416, 304)
+    camera.framerate = 60
+    camera.brightness = 65 # 0-100
+    camera.contrast = 80  # 0-100
+    camera.image_effect = 'none'
+    camera.exposure_mode = 'off'
+    camera.shutter_speed = 10000000
+    camera.iso = 0
+    # camera.awb_mode = 'auto'
+    camera.awb_mode = 'off'
+    camera.awb_gains = (Fraction(77, 64), Fraction(793, 256))
+
+    with picamera.array.PiRGBArray(camera) as stream:
+        camera.capture(stream, format='bgr')
+        # At this point the image is available as stream.array
+        image = stream.array
+    camera.close()
+    return image
+
 ### Program
 
-camera = PiCamera()
-sleep(1)
-camera.rotation = 180
-camera.resolution = (800, 600)
-camera.framerate = 24
-camera.brightness = 45 #0-100
-camera.contrast = 80 #0-100
-camera.image_effect = 'none'
-camera.exposure_mode = 'off'
-camera.shutter_speed = 5000
-camera.iso = 500
-camera.awb_mode = 'flash'
-# camera.start_preview()
-# #camera.capture()
-# sleep(3)
-# camera.stop_preview()
 
-camera.capture('temp/camera.jpg')
-time.sleep(1)
-url = 'temp/camera.jpg'
 
-snap = io.imread(url)
-r = cv2.selectROI("ROI", snap)
+image = snapper()
+r = cv2.selectROI("ROI", image)
 cv2.destroyWindow('ROI')
-imCrop = snap[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
-leds = detectLeds(imCrop, 0.05, 800)
+imCrop = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
+leds = detectLeds(imCrop, 0.05, 100)
 #translateDictionary(leds)
 measurement_dict = measureStates(10, leds)
 print(measurement_dict)
 while 1==1:
-    camera.capture('temp/camera.jpg')
-    time.sleep(2)
-    snap = io.imread(url)
-    imCrop = snap[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
+    t = time.time()
+    image = snapper()
+    print(t - time.time())
+    imCrop = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
     leds = readStatesMeasured(imCrop, leds, measurement_dict)
     for key in leds.keys():
         print(leds[key]["led_state"])
+    cv2.imshow('image', imCrop)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 # leds = measureStates(imCrop, leds, measurement_dict)
 #
 # # for led in leds:
