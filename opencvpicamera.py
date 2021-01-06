@@ -6,18 +6,21 @@ from fractions import Fraction
 
 with picamera.PiCamera() as camera:
     camera.rotation = 180
-    camera.resolution = (400, 304)
+    camera.resolution = (416, 304)
     camera.framerate = 120
     camera.brightness = 70  # 0-100
     camera.contrast = 80  # 0-100
     camera.image_effect = 'none'
     camera.exposure_mode = 'off'
-    camera.shutter_speed = 12348
+    camera.shutter_speed = 8200
+    camera.saturation = 0
+    camera.sharpness = -100
+    camera.exposure_compensation = 0
     camera.iso = 0
-    camera.awb_mode = 'auto'
-    # camera.awb_mode = 'off'
-    # camera.awb_gains = (Fraction(77, 64), Fraction(793, 256))
-    camera.start_preview()
+    #camera.awb_mode = 'auto'
+    camera.awb_mode = 'off'
+    camera.awb_gains = (Fraction(77, 64), Fraction(793, 256))
+    #camera.start_preview()
     time.sleep(2)
     with picamera.array.PiRGBArray(camera) as stream:
         camera.capture(stream, format='bgr')
